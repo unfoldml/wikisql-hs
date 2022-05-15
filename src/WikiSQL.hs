@@ -9,10 +9,10 @@
 -- 1. Zhong et al, Seq2SQL: Generating Structured Queries from Natural Language using Reinforcement Learning https://arxiv.org/abs/1709.00103
 --
 -- 2. https://github.com/salesforce/WikiSQL
-module WikiSQL (-- * dataset
+module WikiSQL (-- * Dataset
   Item(..), Sql(..),
   AggOp(..), Cond(..), CondOp(..), CondValue(..),
-    -- * table
+    -- * Table
     TableId, Table(..), Type(..), Row(..))where
 
 import Data.Void (Void)
