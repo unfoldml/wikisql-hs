@@ -1,16 +1,21 @@
 {-# language DeriveGeneric #-}
 {-# language OverloadedStrings #-}
+{-# options_ghc -Wno-unused-imports #-}
 module WikiSQL where
 
+import Data.Void (Void)
 import GHC.Generics (Generic)
 -- aeson
-import Data.Aeson (FromJSON(..), ToJSON(..))
+import Data.Aeson (FromJSON(..), ToJSON(..), withScientific)
 -- conduit
-import Conduit (runConduitRes, ConduitT, sinkList, printC)
+import Conduit (runConduitRes, ConduitT, (.|), sinkList, printC, MonadResource)
 -- jsonl-conduit
 import JSONL.Conduit (sourceFileC)
 -- text
 import Data.Text (Text)
+
+-- sourceDataset :: (MonadResource m) => FilePath -> ConduitT Item Void m res -> IO res
+-- sourceDataset fp sink = runConduitRes $ sourceFileC fp .| sink
 
 data Item = Item {
   phase :: Int
@@ -19,7 +24,7 @@ data Item = Item {
   , table_id :: TableId
                  } deriving (Eq, Show, Generic)
 instance FromJSON Item
-instance ToJSON Item
+-- instance ToJSON Item
 
 newtype TableId = TableId Text deriving (Eq, Show, Generic)
 instance FromJSON TableId
@@ -27,15 +32,38 @@ instance ToJSON TableId
 
 data Sql = Sql {
   conds :: Conds
-  , sel :: Int
-  , agg :: Int 
+  , sel :: Int -- ^ numerical index of the column that is being selected. You can find the actual column from the table.
+  , agg :: AggOp -- ^ aggregation operator that is being used.
                } deriving (Eq, Show, Generic)
 instance FromJSON Sql
-instance ToJSON Sql
+-- instance ToJSON Sql
 
-data Conds = Conds Int Int Text deriving (Eq, Show, Generic)
+
+-- agg_ops = ['', 'MAX', 'MIN', 'COUNT', 'SUM', 'AVG']
+newtype AggOp = AggOp (Maybe AggOp_) deriving (Eq, Show)
+data AggOp_ = AOMax | AOMin | AOCount | AOSum | AOAvg deriving (Eq, Show)
+instance FromJSON AggOp where
+  parseJSON = withScientific "AggOp" $ \ a -> AggOp <$>
+    case a of
+      1 -> pure $ Just AOMax
+      2 -> pure $ Just AOMin
+      3 -> pure $ Just AOCount
+      4 -> pure $ Just AOSum
+      5 -> pure $ Just AOAvg
+      _ -> pure Nothing
+
+-- cond_ops = ['=', '>', '<', 'OP']
+data Conds = Conds Int CondOp (Either Double Text) deriving (Eq, Show, Generic)
 instance FromJSON Conds
-instance ToJSON Conds
+-- instance ToJSON Conds
+
+data CondOp = COEq | COGt | COLt | COOp deriving (Eq, Show)
+instance FromJSON CondOp where
+  parseJSON = withScientific "CondOp" $ \ a -> case a of
+    0 -> pure COEq
+    1 -> pure COGt
+    2 -> pure COLt
+    _ -> pure COOp
 
 {-
 {
