@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# language DeriveGeneric #-}
 {-# language OverloadedStrings #-}
 {-# options_ghc -Wno-unused-imports #-}
@@ -6,11 +7,16 @@ module WikiSQL where
 import Data.Void (Void)
 import GHC.Generics (Generic)
 -- aeson
-import Data.Aeson (FromJSON(..), ToJSON(..), withScientific)
+import Data.Aeson (FromJSON(..), ToJSON(..), withScientific, eitherDecode')
+import Data.Aeson.Types (Parser, Value(..))
+-- bytestring
+import qualified Data.ByteString.Lazy as LBS (ByteString)
 -- conduit
 import Conduit (runConduitRes, ConduitT, (.|), sinkList, printC, MonadResource)
 -- jsonl-conduit
 import JSONL.Conduit (sourceFileC)
+--
+import Data.Scientific (toRealFloat)
 -- text
 import Data.Text (Text)
 
@@ -31,7 +37,7 @@ instance FromJSON TableId
 instance ToJSON TableId
 
 data Sql = Sql {
-  conds :: Conds
+  conds :: [Cond]
   , sel :: Int -- ^ numerical index of the column that is being selected. You can find the actual column from the table.
   , agg :: AggOp -- ^ aggregation operator that is being used.
                } deriving (Eq, Show, Generic)
@@ -53,9 +59,17 @@ instance FromJSON AggOp where
       _ -> pure Nothing
 
 -- cond_ops = ['=', '>', '<', 'OP']
-data Conds = Conds Int CondOp (Either Double Text) deriving (Eq, Show, Generic)
-instance FromJSON Conds
--- instance ToJSON Conds
+data Cond = Cond Int CondOp CondValue deriving (Eq, Show, Generic)
+instance FromJSON Cond
+-- instance ToJSON Cond
+
+-- | Condition value
+newtype CondValue = CondValue (Either Double Text) deriving (Eq, Show)
+instance FromJSON CondValue where
+  parseJSON o = CondValue <$> case o of
+    Number n -> pure $ Left $ toRealFloat n
+    String t -> pure $ Right t
+    _ -> fail "CondValue expects either a float or a string"
 
 data CondOp = COEq | COGt | COLt | COOp deriving (Eq, Show)
 instance FromJSON CondOp where
@@ -65,24 +79,9 @@ instance FromJSON CondOp where
     2 -> pure COLt
     _ -> pure COOp
 
-{-
-{
-   "phase":1,
-   "question":"who is the manufacturer for the order year 1998?",
-   "sql":{
-      "conds":[
-         [
-            0,
-            0,
-            "1998"
-         ]
-      ],
-      "sel":1,
-      "agg":0
-   },
-   "table_id":"1-10007452-3"
-}
--}
+t0 :: LBS.ByteString
+t0 = "{\"phase\":1,   \"question\":\"who is the manufacturer for the order year 1998?\",   \"sql\":{      \"conds\":[[0, 0, \"1998\" ] ],      \"sel\":1,      \"agg\":0   },   \"table_id\":\"1-10007452-3\"}"
+
 
 
 

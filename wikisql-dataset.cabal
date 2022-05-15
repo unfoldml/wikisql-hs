@@ -19,10 +19,12 @@ library
   ghc-options:         -Wall
   hs-source-dirs:      src
   exposed-modules:     WikiSQL
-  build-depends:       base >= 4.7 && < 5
-                     , aeson
+  build-depends:       aeson
+                     , base >= 4.7 && < 5
+                     , bytestring >= 0.10.12.1
                      , conduit
                      , jsonl-conduit
+                     , scientific
                      , text
 
 test-suite spec
