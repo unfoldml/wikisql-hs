@@ -1,0 +1,33 @@
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/6.yaml
+
+packages:
+- .
+
+extra-deps:
+- jsonl-0.2.0.0@sha256:35f8a3816f0b93830008709a8e64c0c69b9bc632a92c54b3be3345bfccba4a5c,1465
+- jsonl-conduit-0.1.1@sha256:86bd3bee1fb164a570632698b50bc36997f46b38637766026576d0fbf26717a9,1449
+
+# Override default flag values for local packages and extra-deps
+# flags: {}
+
+# Extra package databases containing global packages
+# extra-package-dbs: []
+
+# Control whether we use the GHC we find on the path
+# system-ghc: true
+#
+# Require a specific version of stack, using version ranges
+# require-stack-version: -any # Default
+# require-stack-version: ">=2.7"
+#
+# Override the architecture used by stack, especially useful on Windows
+# arch: i386
+# arch: x86_64
+#
+# Extra directories used by stack for building
+# extra-include-dirs: [/path/to/dir]
+# extra-lib-dirs: [/path/to/dir]
+#
+# Allow a newer minor version of GHC than the snapshot specifies
+# compiler-check: newer-minor
