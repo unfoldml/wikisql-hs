@@ -2,12 +2,23 @@
 {-# language DeriveGeneric #-}
 {-# language OverloadedStrings #-}
 {-# options_ghc -Wno-unused-imports #-}
-module WikiSQL where
+-- | WikiSQL - A large crowd-sourced dataset for developing natural language interfaces for relational databases.
+--
+-- References
+--
+-- 1. Zhong et al, Seq2SQL: Generating Structured Queries from Natural Language using Reinforcement Learning https://arxiv.org/abs/1709.00103
+--
+-- 2. https://github.com/salesforce/WikiSQL
+module WikiSQL (-- * dataset
+  Item(..), Sql(..),
+  AggOp(..), Cond(..), CondOp(..), CondValue(..),
+    -- * table
+    TableId, Table(..), Type(..), Row(..))where
 
 import Data.Void (Void)
 import GHC.Generics (Generic)
 -- aeson
-import Data.Aeson (FromJSON(..), ToJSON(..), withScientific, eitherDecode')
+import Data.Aeson (FromJSON(..), ToJSON(..), (.:), withObject, withScientific, eitherDecode')
 import Data.Aeson.Types (Parser, Value(..))
 -- bytestring
 import qualified Data.ByteString.Lazy as LBS (ByteString)
@@ -23,14 +34,35 @@ import Data.Text (Text)
 -- sourceDataset :: (MonadResource m) => FilePath -> ConduitT Item Void m res -> IO res
 -- sourceDataset fp sink = runConduitRes $ sourceFileC fp .| sink
 
+
+-- | Question, query and table ID
 data Item = Item {
-  phase :: Int
-  , question :: Text
-  , sql :: Sql
-  , table_id :: TableId
+  phase :: Int -- ^ phase in which the dataset was collected. We collected WikiSQL in two phases
+  , question :: Text -- ^ natural language question written by the worker
+  , sql :: Sql -- ^ SQL query corresponding to the question
+  , table_id :: TableId -- ^ ID of the table to which this question is addressed
                  } deriving (Eq, Show, Generic)
 instance FromJSON Item
 -- instance ToJSON Item
+
+data Table = Table {
+  tId :: TableId
+  , tHeader :: [Text] -- ^ list of column names in the table
+  , tTypes :: [Type]
+  , tRows :: [Row]
+                   } deriving (Eq, Show)
+instance FromJSON Table where
+  parseJSON = withObject "Table" $ \ o -> Table <$>
+    o .: "id" <*>
+    o .: "header" <*>
+    o .: "types" <*>
+    o .: "rows"
+
+data Type = TyText deriving (Eq, Show, Generic)
+instance FromJSON Type
+
+data Row = Row [Text] deriving (Eq, Show, Generic)
+instance FromJSON Row
 
 newtype TableId = TableId Text deriving (Eq, Show, Generic)
 instance FromJSON TableId
@@ -38,8 +70,8 @@ instance ToJSON TableId
 
 data Sql = Sql {
   conds :: [Cond]
-  , sel :: Int -- ^ numerical index of the column that is being selected. You can find the actual column from the table.
-  , agg :: AggOp -- ^ aggregation operator that is being used.
+  , sel :: Int -- ^ numerical index of the column that is being selected. You can find the actual column from the table
+  , agg :: AggOp -- ^ aggregation operator that is being used
                } deriving (Eq, Show, Generic)
 instance FromJSON Sql
 -- instance ToJSON Sql
