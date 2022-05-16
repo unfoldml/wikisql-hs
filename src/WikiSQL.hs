@@ -11,9 +11,12 @@
 -- 2. https://github.com/salesforce/WikiSQL
 module WikiSQL (-- * Dataset
   Item(..), Sql(..),
-  AggOp(..), Cond(..), CondOp(..), CondValue(..),
+  AggOp(..), AggOp_(..), Cond(..), CondOp(..), CondValue(..),
     -- * Table
-    TableId, Table(..), Type(..), Row(..))where
+    TableId, Table(..), Type(..), Row(..),
+    -- * test data
+    t0
+  )where
 
 import Data.Void (Void)
 import GHC.Generics (Generic)
@@ -79,7 +82,12 @@ instance FromJSON Sql
 
 -- agg_ops = ['', 'MAX', 'MIN', 'COUNT', 'SUM', 'AVG']
 newtype AggOp = AggOp (Maybe AggOp_) deriving (Eq, Show)
-data AggOp_ = AOMax | AOMin | AOCount | AOSum | AOAvg deriving (Eq, Show)
+data AggOp_ = AOMax -- ^ max
+            | AOMin -- ^ min
+            | AOCount -- ^ count
+            | AOSum -- ^ sum
+            | AOAvg -- ^ average
+            deriving (Eq, Show)
 instance FromJSON AggOp where
   parseJSON = withScientific "AggOp" $ \ a -> AggOp <$>
     case a of
@@ -91,6 +99,10 @@ instance FromJSON AggOp where
       _ -> pure Nothing
 
 -- cond_ops = ['=', '>', '<', 'OP']
+
+-- | A condition on a column
+--
+-- the integer field refers to the column number in the corresponding table
 data Cond = Cond Int CondOp CondValue deriving (Eq, Show, Generic)
 instance FromJSON Cond
 -- instance ToJSON Cond
@@ -103,7 +115,11 @@ instance FromJSON CondValue where
     String t -> pure $ Right t
     _ -> fail "CondValue expects either a float or a string"
 
-data CondOp = COEq | COGt | COLt | COOp deriving (Eq, Show)
+data CondOp = COEq -- ^ \[ = \]
+            | COGt -- ^ \[ \gt \]
+            | COLt -- ^ \[ \lt \]
+            | COOp
+            deriving (Eq, Show)
 instance FromJSON CondOp where
   parseJSON = withScientific "CondOp" $ \ a -> case a of
     0 -> pure COEq
