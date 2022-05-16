@@ -4,12 +4,17 @@
 {-# options_ghc -Wno-unused-imports #-}
 -- | WikiSQL - A large crowd-sourced dataset for developing natural language interfaces for relational databases.
 --
+-- This package provides a streaming interface (`sourceDataset`) for reading the dataset in constant memory.
+--
 -- References
 --
 -- 1. Zhong et al, Seq2SQL: Generating Structured Queries from Natural Language using Reinforcement Learning https://arxiv.org/abs/1709.00103
 --
 -- 2. https://github.com/salesforce/WikiSQL
-module WikiSQL (-- * Dataset
+module WikiSQL (
+  -- * Streaming interface
+  sourceDataset,
+  -- * Dataset
   Item(..), Sql(..),
   AggOp(..), AggOp_(..), Cond(..), CondOp(..), CondValue(..),
     -- * Table
@@ -34,9 +39,12 @@ import Data.Scientific (toRealFloat)
 -- text
 import Data.Text (Text)
 
--- sourceDataset :: (MonadResource m) => FilePath -> ConduitT Item Void m res -> IO res
--- sourceDataset fp sink = runConduitRes $ sourceFileC fp .| sink
-
+-- | Stream the dataset from JSON file
+--
+-- One data instance per element of the stream
+sourceDataset :: (MonadResource m) => FilePath -- ^ path to JSON file
+              -> ConduitT () Item m ()
+sourceDataset = sourceFileC
 
 -- | Question, query and table ID
 data Item = Item {
